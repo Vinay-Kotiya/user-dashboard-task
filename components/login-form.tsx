@@ -48,7 +48,7 @@ export function LoginForm({
 
   async function onSubmit(data: z.infer<typeof loginSchema>) {
     try {
-      console.log("Login data=>", data);
+      // console.log("Login data=>", data);
       const res = await signIn("credentials", {
         email: data.email,
         password: data.password,

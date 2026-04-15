@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
             gender: user.gender,
             role: user.role,
             authToken: `Bearer ${token}`,
-          };
+          } as any;
         } catch (error) {
           console.error("Next Auth Error: ", error);
           throw error;

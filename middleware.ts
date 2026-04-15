@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(homeUrl);
   }
   if (token.role == "ADMIN" && pathname.startsWith("/")) {
-    const dashboardUrl = new URL("/dashboard", request.url);
+    const dashboardUrl = new URL("/dashboard/users", request.url);
     return NextResponse.redirect(dashboardUrl);
   }
   return NextResponse.next();

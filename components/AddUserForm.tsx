@@ -31,8 +31,13 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "./ui/combobox";
-export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
-  const registerSchema = z.object({
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+export function AddUserForm({ ...props }: React.ComponentProps<typeof Card>) {
+  const { data: session } = useSession();
+  const authToken = session?.authToken;
+  const router = useRouter();
+  const addUserSchema = z.object({
     username: z
       .string()
       .min(3, "Username must be at least 3 characters.")
@@ -51,6 +56,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     dob: z.string().refine((date) => !isNaN(Date.parse(date)), {
       message: "Invalid date format.",
     }),
+    role: z.enum(["ADMIN", "USER"], {
+      message: "Please select a valid role.",
+    }),
     phoneNo: z
       .string()
       .min(10, "Phone number must be at least 10 digits.")
@@ -63,8 +71,8 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     profession: z.string().min(2, "Profession is required."),
   });
 
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+  const form = useForm<z.infer<typeof addUserSchema>>({
+    resolver: zodResolver(addUserSchema),
     defaultValues: {
       username: "",
       firstName: "",
@@ -73,7 +81,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       password: "",
       gender: undefined, // Or a default like "male"
       dob: "",
-
+      role: undefined,
       phoneNo: "",
       country: "",
       state: "",
@@ -84,16 +92,34 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     },
   });
 
-  async function onSubmit(data: z.infer<typeof registerSchema>) {
+  async function onSubmit(data: z.infer<typeof addUserSchema>) {
     try {
-      console.log("Data:", data);
-      const res = await axios.post("/api/auth/register", data);
-      console.log("Response from server:", res);
-      toast.success("User registered successfully!");
-    } catch (error) {
+      //   console.log("Data:", data);
+      const payload = {
+        ...data,
+        dob: new Date(data.dob),
+      };
+      console.log("Add user data ====>", payload);
+      const res = await axios.post("/api/users", payload, {
+        headers: {
+          Authorization: authToken,
+        },
+      });
+      if (res.status == 200) {
+        form.reset();
+        toast.success("User registered successfully!");
+        router.back();
+      }
+      //   if (res.status == 500) {
+      //     toast.error(res.data);
+      //   }
+      //   console.log("Response from server:", res);
+    } catch (error: any) {
       console.error("Error while registration ", error);
+      toast.error(error);
     }
   }
+  const roles = ["USER", "ADMIN"] as const;
   const genders = ["MALE", "FEMALE", "OTHER"] as const;
   return (
     <Card>
@@ -102,9 +128,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         Back
       </Button> */}
       <CardHeader>
-        <CardTitle className="text-2xl">Create an account</CardTitle>
+        <CardTitle className="text-2xl">Add new User</CardTitle>
         <CardDescription>
-          Enter your information below to create your account
+          Enter information below to create your account
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -218,6 +244,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </Field>
               )}
             />
+
             <Controller
               name="gender"
               control={form.control}
@@ -260,6 +287,47 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               )}
             />
             <Controller
+              name="role"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>
+                    Role <span className="text-red-500">*</span>{" "}
+                  </FieldLabel>
+
+                  <Combobox
+                    items={roles}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <ComboboxInput
+                      className={"border border-gray-500 "}
+                      placeholder="Select a Role"
+                    />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No items found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(item) => (
+                          <ComboboxItem
+                            key={item}
+                            value={item}
+                            onSelect={() => field.onChange(item)}
+                          >
+                            {item}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
               name="dob"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -274,6 +342,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter DOB"
                     autoComplete="off"
+                    type="date"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -436,10 +505,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
           <Button type="submit" form="form-rhf-demo">
             Submit
           </Button>
-          <FieldDescription className="text-center">
-            {/* Don&apos;t have an account? <a href="#">Sign up</a> */}
-            Already have a account? <Link href={"/login"}> Login</Link>
-          </FieldDescription>
         </Field>
       </CardFooter>
     </Card>
