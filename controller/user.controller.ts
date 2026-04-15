@@ -5,12 +5,57 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 export const getAllUsers = async () => {
-  const users = await prisma.user.findMany();
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+      phoneNo: true,
+      gender: true,
+      dob: true,
+      address: true,
+      city: true,
+      state: true,
+      hobby: true,
+      profession: true,
+      country: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
   return NextResponse.json(users);
 };
+
 export const getUserById = async (id: string) => {
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      username: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+      phoneNo: true,
+      gender: true,
+      dob: true,
+      address: true,
+      city: true,
+      state: true,
+      hobby: true,
+      profession: true,
+      country: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  if (!user) {
+    return NextResponse.json({ message: "User not found" }, { status: 404 });
+  }
 
   return NextResponse.json(user);
 };

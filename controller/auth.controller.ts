@@ -14,11 +14,14 @@ export const register = async (data: User) => {
       { status: 400 },
     );
   }
-  if (!firstName || !lastName || !gender || !dob || !role) {
+  if (!firstName || !lastName || !gender || !dob) {
     return NextResponse.json(
       { message: "First Name, last name, gender, dob and role are required" },
       { status: 400 },
     );
+  }
+  if (!role) {
+    data = { ...data, role: "USER" };
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -55,7 +58,7 @@ export const login = async ({
     throw new Error("Email and Password are required");
   }
   const user = await prisma.user.findUnique({ where: { email } });
-  console.log("User from DB======================================>", user);
+  // console.log("User from DB======================================>", user);
   if (!user) {
     throw new Error("User not found");
   }
